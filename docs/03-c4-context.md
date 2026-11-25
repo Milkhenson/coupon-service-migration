@@ -2,33 +2,25 @@
 
 ```mermaid
 flowchart TB
-    subgraph People["Люди / роли"]
-        Buyer["Покупатель"]
-        Cashier["Кассир"]
-        Manager["Менеджер (~20)"]
-        Support["Поддержка касс / антифрод"]
-    end
+    classDef person fill:#08427b,stroke:#052e56,color:#fff
+    classDef system fill:#1168bd,stroke:#0b4884,color:#fff
+    classDef external fill:#999999,stroke:#6b6b6b,color:#fff
 
-    subgraph Systems["Системы"]
-        POS["Касса (POS), любой тип"]
-        Coupon["Сервис купонов (микросервис)"]
-        Promo["Система акций (внешняя)"]
-        DWH["DWH компании"]
-        DB[("PostgreSQL (было Oracle)")]
-        UI["Экран ручных операций"]
-    end
+    Buyer["Покупатель"]:::person
+    Cashier["Кассир"]:::person
+    Manager["Менеджер"]:::person
+    Support["Поддержка / антифрод"]:::person
 
-    subgraph Infra["Инфраструктура"]
-        Broker["Брокер (асинхронная активация, массовые операции)"]
-    end
+    POS["Касса (POS)"]:::external
+    Promo["Система акций"]:::external
+    DWH["DWH компании"]:::external
 
-    Buyer -->|"предъявляет/получает купон"| POS
-    Cashier -->|"работает"| POS
-    POS -->|"активация (асинхрон), проверка/гашение/восстановление (синхрон), проверка и выдача ключа (1/день, 1/мес)"| Coupon
-    Manager -->|"массовые операции (до 200 000)"| UI
-    Support -->|"разбор E, массовое гашение (антифрод)"| UI
-    UI -->|"API массовых операций (асинхронно)"| Coupon
-    Promo -->|"акции, ТТ, даты (ETL 15 мин)"| Coupon
-    Coupon -->|"купоны и события (ежедневно, часть Kafka)"| DWH
-    Coupon <-->|"чтение/запись, включая генерацию ключей 25-го ночью"| DB
-    Coupon <-->|"асинхронные задачи"| Broker
+    Coupon["Сервис купонов"]:::system
+
+    Buyer -->|"Предъявляет / получает купон"| POS
+    Cashier -->|"Работает"| POS
+    POS -->|"API, внутренний канал"| Coupon
+    Manager -->|"Массовые операции (до 200 000)"| Coupon
+    Support -->|"Разбор E, массовое гашение"| Coupon
+    Promo -->|"Акции, ТТ, даты (ETL 15 мин)"| Coupon
+    Coupon -->|"Купоны и события (Ежедневно + Kafka)"| DWH
